@@ -92,3 +92,55 @@ end
 
 ---
 
+# Deployment
+
+## wake
+
+---
+
+# Deployment
+
+## awake
+
+---
+
+# Polyglot
+
+Why?  
+Challenges?  
+"Shared code"?
+
+---
+
+# Example core service: aufgaben
+
+---
+
+# Example stream service: webhooks
+
+---
+
+# Services vs Libraries
+
+* Logging
+
+  stdout | syslog | rsyslog cluster
+
+* Metrics
+
+  statsd | librato
+
+* Serialization
+
+  Migrating from a ruby gem to a ruby service for mutations
+
+---
+
+# Conventions
+
+* Version in url (`/api/v1/tasks`)
+* Flat routes (no regexps, no nesting, use query params)
+* Shared `api-client` for HMAC, discovery
+* Shared `api-controller` for permissions, `null` removal
+* Shared service for writes for emitting mutations (coordinator)
+* Every object has a `type`, `id`, and `revision` property
