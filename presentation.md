@@ -188,7 +188,6 @@ Aufgaben::Application.routes.draw do
     namespace :v1 do
       resources :tasks
       resources :notes
-      resources :task_restores, only: [:create]
     end
   end
 end
