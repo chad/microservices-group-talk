@@ -2,12 +2,11 @@
 
 ---
 
-# Background
-
-## Wunderlist 2
+# Background: Wunderlist 2
 
 * Monolithic inter-dependent application
 * Monolithic relational database
+* Added two slightly monolithic services towards the end
 
 ---
 
@@ -92,15 +91,41 @@ end
 
 ---
 
-# Deployment
+# Deployment: wake
 
-## wake
+```sh
+$ cd aufgaben
+
+$ wake pack
++ some output while installing the app's code or binary
+dockersha
+
+$ wake deploy --sha dockersha -n 6
++ creates hosts if necessary
++ launches 6 instances
+
+$ wake count
+6
+
+$ wake expand -n 3
++ creates hosts if necessary
++ launches 3 instances
+9
+
+$ wake contract -n 3
++ terminates 3 instances (oldest first)
+6
+
+
+$ wake replace --sha dockersha
++ counts current instances
++ launches current amount
++ contracts
+```
 
 ---
 
-# Deployment
-
-## awake
+# Deployment: awake
 
 ---
 
