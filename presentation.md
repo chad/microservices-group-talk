@@ -1,4 +1,4 @@
-# Microservices at Wunderlist
+# [fit] Microservices at Wunderlist
 
 ---
 
@@ -10,11 +10,11 @@
 
 ---
 
-![](architecture-diagram.png)
+![fit](architecture-diagram.png)
 
 ---
 
-# Synchronous & Asynchronous
+# [fit] Synchronous & Asynchronous
 
 ---
 
@@ -97,7 +97,7 @@ end
 $ cd aufgaben
 
 $ wake pack
-+ some output while installing the app's code or binary
++ some output while installing the app code or binary
 dockersha
 
 $ wake deploy --sha dockersha -n 6
@@ -117,15 +117,35 @@ $ wake contract -n 3
 6
 
 
+```
+
+---
+
+# Deployment: wake
+
+```sh
 $ wake replace --sha dockersha
 + counts current instances
 + launches current amount
 + contracts
+
+$ wake count
+6
+
+$ wake scale -n 12
++ counts current instances
++ if current value is more than 12, runs contract
++ else if current value is less than 12, runs expand
++ in this case, it would expand
 ```
 
 ---
 
 # Deployment: awake
+
+* Github commit hook | build container
+* Button to replace
+* Button to scale
 
 ---
 
@@ -133,7 +153,7 @@ $ wake replace --sha dockersha
 
 Why?  
 Challenges?  
-"Shared code"?
+“Shared code”?
 
 ---
 
@@ -147,15 +167,15 @@ Challenges?
 
 # Services vs Libraries
 
-* Logging
+* **Logging**
 
   stdout | syslog | rsyslog cluster
 
-* Metrics
+* **Metrics**
 
   statsd | librato
 
-* Serialization
+* **Serialization**
 
   Migrating from a ruby gem to a ruby service for mutations
 
@@ -167,5 +187,6 @@ Challenges?
 * Flat routes (no regexps, no nesting, use query params)
 * Shared `api-client` for HMAC, discovery
 * Shared `api-controller` for permissions, `null` removal
+* Every change creates a mutation object
 * Shared service for writes for emitting mutations (coordinator)
 * Every object has a `type`, `id`, and `revision` property
