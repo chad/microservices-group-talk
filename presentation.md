@@ -42,10 +42,62 @@
 
 ---
 
-# [fit] Synchronous & Asynchronous
+# Synchronous & Asynchronous
+
+Request
+
+```json
+{
+  "type": "request",
+  "verb": "POST",
+  "uri": "/api/v1/tasks",
+  "headers": {
+    ...
+  },
+  "body":
+    "{\"title\":\"HI\",
+      \"list_id\":105529866,
+      \"starred\":false,
+      \"recurrence_count\":0,
+      \"recurrence_type\":\"\",
+      \"completed\":false,
+      \"created_at\":\"2014-06-26T12:30:27Z\",
+      \"selected\":false,
+      \"active\":false}"
+}
+```
 
 ^ Every request is synchronous from the HTTP LB down to the database
   Yet every request is async because of hahn and the websocket
+
+---
+
+# Synchronous & Asynchronous
+
+Response
+
+```json
+{
+  "status": 200,
+  "headers": {
+    ...
+  },
+  "body":
+    "{\"title\":\"HI\",
+      \"list_id\":105529866,
+      \"starred\":false,
+      \"recurrence_count\":0,
+      \"recurrence_type\":\"\",
+      \"completed\":false,
+      \"created_at\":\"2014-06-26T12:30:27Z\",
+      \"selected\":false,
+      \"active\":false}"
+}
+```
+
+^ Every request is synchronous from the HTTP LB down to the database
+  Yet every request is async because of hahn and the websocket
+
 
 ---
 
