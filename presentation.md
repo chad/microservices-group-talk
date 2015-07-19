@@ -2,11 +2,11 @@
 
 ---
 
-![fit](wunderlist-2-architecture-diagram.png)
+![inline 100%](wunderlist-2-architecture-diagram.png)
 
 ^ Monolithic inter-dependent application
-Monolithic relational database
-Added two slightly monolithic services towards the end
+  Monolithic relational database
+  Added two slightly monolithic services towards the end
 
 ---
 
@@ -19,6 +19,9 @@ Added two slightly monolithic services towards the end
 ---
 
 # [fit] Synchronous & Asynchronous
+
+^ Every request is synchronous from the HTTP LB down to the database
+  Yet every request is async because of hahn and the websocket
 
 ---
 
@@ -175,7 +178,10 @@ $ wake scale -n 12
 
 ```ruby
 Aufgaben::Application.routes.draw do
-  get '/api/health' => ->(env){ [200, {"Content-Type" => "application/json"}, ['{"up":true}']] }
+  get '/api/health' => ->(env){
+    [200, {"Content-Type" => "application/json"}, ['{"up":true}']]
+  }
+
   namespace :api do
     namespace :v1 do
       resources :tasks
@@ -201,6 +207,8 @@ end
 ```
 
 ---
+
+`Task` recently moved from `aufgaben` to `coor`.
 
 ```ruby
 class Task < ActiveRecord::Base
@@ -268,32 +276,92 @@ trait TasksController extends Controller {
 
 ---
 
-# Polyglot Development
+```ruby
+Rails.application.routes.draw do
+  namespace :api do
+    namespace :v1 do
+      resources :webhooks
+    end
+  end
+end
+```
 
 ---
 
-# Why?  
+Old version:
+
+```ruby
+def subscribe_and_work
+  queue.bind(exchange, routing_key: "#").subscribe(ack: true, block: true) do |info, properties, payload|
+    begin
+      if work(payload, info.routing_key.split('.')[1]) == :retry
+        queue.class.channel.reject info.delivery_tag, true # the last true is important, it means to re-enqueue
+      else
+        queue.class.channel.ack info.delivery_tag
+      end
+    rescue StandardError => e
+      p e
+    end
+  end
+end
+```
+
+---
+
+```scala
+class MutationProcessor extends Actor {
+  import MutationProcessor._
+
+  implicit val timeout = akka.util.Timeout(2, TimeUnit.SECONDS)
+  import context.dispatcher
+  import akka.pattern.pipe
+
+  def receive = {
+    case HandleListDeletion(mutation, webhook) =>
+      println(s"[MutationHandler!HandeListDeletion] Received a delete-list mutation. Deleting webhook #${webhook.id}.")
+      val deleteOperation = ApiCalls.deleteWebhook(webhook)
+      pipe(deleteOperation.map(_ => Done).toFutureEither) to sender
+
+    case ProcessMutation(listId, mutation, webhook) =>
+      println(s"[MutationHandler!ProcessMutation] processing mutation for list_id $listId")
+      val future: ApiFuture[Option[JsValue]] = processWebhook(mutation, webhook)
+      pipe(future.toFutureEither) to sender
+  }
+
+  def processWebhook(mutation: Mutation, webhook: Webhook): ApiFuture[Option[JsValue]] = {
+    new Processor(mutation).process(webhook)
+  }
+}
+```
+
+---
+
+# [fit] Polyglot Development
+
+---
+
+# [fit] Why?
 
 ^ Use the best tool for the job
-Prepare for upgrades and technology shift. Historically hard. Do hard things all the time.
-Reduce silly dogma.
-Fun and employee passion/motivation.
+  Prepare for upgrades and technology shift. Historically hard. Do hard things all the time.
+  Reduce silly dogma.
+  Fun and employee passion/motivation.
 
 ---
 
-# Challenges?  
+# [fit] Challenges?
 
 ^ Takes some getting used to to context-shift.
-Tooling and deployment more of a pain than the languages themselves.
-Need people who are willing to learn fast.
+  Tooling and deployment more of a pain than the languages themselves.
+  Need people who are willing to learn fast.
 
 ---
 
-# "What about shared libraries?"
+# [fit] "What about shared libraries?"
 
 ---
 
-# No
+# [fit] No
 
 ---
 
@@ -301,7 +369,7 @@ Need people who are willing to learn fast.
 
 **Logging**
 
-  stdout | syslog | rsyslog cluster
+stdout | syslog | rsyslog cluster
 
 ---
 
@@ -309,13 +377,34 @@ Need people who are willing to learn fast.
 
 **Metrics**
 
-  statsd | librato
+statsd | librato
 
 ---
 
 **Serialization**
 
-  Migrating from a ruby gem to a ruby service for mutations
+Migrating from a ruby gem to a ruby service for mutations
+
+```ruby
+class TaskRepresentation
+  include Rep
+
+  initialize_with :task
+
+  fields [
+    :id,
+    :assignee_id,
+    :completed,
+    :completed_at,
+    :completed_by_id,
+    :created_at,
+    :created_by_id,
+    :created_by_request_id,
+    :recurrence_type,
+    # ...
+  ] => :default
+end
+```
 
 ---
 
@@ -331,4 +420,4 @@ Need people who are willing to learn fast.
 
 ---
 
-# Questions?
+# [fit] Questions?
