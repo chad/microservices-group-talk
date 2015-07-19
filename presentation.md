@@ -2,11 +2,35 @@
 
 ---
 
-![inline 100%](wunderlist-2-architecture-diagram.png)
+# [fit] Wunderlist 1
+
+---
+
+## PHP + MySQL
+
+![right 100%](wunderlist-2-architecture-diagram.png)
 
 ^ Monolithic inter-dependent application
   Monolithic relational database
   Added two slightly monolithic services towards the end
+
+---
+
+# [fit] Wunderlist 2
+
+---
+
+## Rails + Postgres
+
+![right 100%](wunderlist-2-architecture-diagram.png)
+
+^ Monolithic inter-dependent application
+  Monolithic relational database
+  Added two slightly monolithic services towards the end
+
+---
+
+# [fit] Wunderlist 3
 
 ---
 
@@ -417,6 +441,12 @@ end
 * Every change creates a mutation object
 * Shared service for writes for emitting mutations (coordinator)
 * Every object has a `type`, `id`, and `revision` property
+
+---
+
+# Takeaway
+
+Over half of our microservices have been updated or rewritten since we launched, all without major interruption or even a launch party.
 
 ---
 
