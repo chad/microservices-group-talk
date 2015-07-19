@@ -484,6 +484,18 @@ end
 
 ---
 
+# Doesn't this cause performance problems?
+
+---
+
+
+![100%](Librato.png)
+
+^ Talk about how much easier it is to identify, scale, etc. with separate processes
+ And other stuff.  (Yes, but IPC isn't what slows us down)
+
+---
+
 # Conventions
 
 * Version in url (`/api/v1/tasks`)
