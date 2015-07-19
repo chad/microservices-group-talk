@@ -2,15 +2,11 @@
 
 ---
 
-# Background: Wunderlist 2
-
-* Monolithic inter-dependent application
-* Monolithic relational database
-* Added two slightly monolithic services towards the end
-
----
-
 ![fit](wunderlist-2-architecture-diagram.png)
+
+^ Monolithic inter-dependent application
+Monolithic relational database
+Added two slightly monolithic services towards the end
 
 ---
 
