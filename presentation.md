@@ -176,7 +176,7 @@ end
 
 ```ruby
 class Tasks
-  def get(id:)
+  def get(id)
     Api(:aufgaben, :v1).get("tasks/#{id}").as(Task) do |task|
       Api(:exestenz, :v1).get("exists", list_id: task.list_id, user_id: user_id).success?
     end
