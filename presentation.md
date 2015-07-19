@@ -10,6 +10,10 @@
 
 ---
 
+![fit](wunderlist-2-architecture-diagram.png)
+
+---
+
 ![fit](architecture-diagram.png)
 
 ---
@@ -169,14 +173,6 @@ $ wake scale -n 12
 
 ---
 
-# Polyglot
-
-Why?  
-Challenges?  
-“Shared code”?
-
----
-
 # [fit] Example core service: aufgaben
 
 ---
@@ -276,17 +272,52 @@ trait TasksController extends Controller {
 
 ---
 
-# Services vs Libraries
+# Polyglot Development
 
-* **Logging**
+---
+
+# Why?  
+
+^ Use the best tool for the job
+Prepare for upgrades and technology shift. Historically hard. Do hard things all the time.
+Reduce silly dogma.
+Fun and employee passion/motivation.
+
+---
+
+# Challenges?  
+
+^ Takes some getting used to to context-shift.
+Tooling and deployment more of a pain than the languages themselves.
+Need people who are willing to learn fast.
+
+---
+
+# "What about shared libraries?"
+
+---
+
+# No
+
+---
+
+# Service vs Library
+
+**Logging**
 
   stdout | syslog | rsyslog cluster
 
-* **Metrics**
+---
+
+# Service vs Library
+
+**Metrics**
 
   statsd | librato
 
-* **Serialization**
+---
+
+**Serialization**
 
   Migrating from a ruby gem to a ruby service for mutations
 
@@ -301,3 +332,7 @@ trait TasksController extends Controller {
 * Every change creates a mutation object
 * Shared service for writes for emitting mutations (coordinator)
 * Every object has a `type`, `id`, and `revision` property
+
+---
+
+# Questions?
