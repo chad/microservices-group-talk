@@ -38,6 +38,14 @@
 
 ---
 
+![fit](giphy.gif)
+
+---
+
+![fit](architecture-diagram.png)
+
+---
+
 ![fit](architecture-diagram-with-overlay.png)
 
 ---
@@ -445,7 +453,7 @@ class MutationProcessor extends Actor {
 
 **Logging**
 
-stdout | syslog | rsyslog cluster
+stdout | go logger | syslog | rsyslog cluster
 
 ---
 
@@ -500,11 +508,14 @@ end
 
 ---
 
-# [fit] Version in url (`/api/v1/tasks`)
+# Version in url
+## `/api/v1/tasks`
 
 ---
 
-# [fit] Flat routes (no regexps, no nesting, use query params)
+# Flat routes
+## `/api/v1/tasks?list_id=123`
+### _no regexps, no nesting, use query params_
 
 ---
 
@@ -516,11 +527,47 @@ end
 
 ---
 
-# [fit] Every change creates a mutation object
+# Every change creates a mutation object
+
+```json
+{
+  "recipient_id": 123456,
+  "version": 1,
+  "type": "mutation",
+  "data": {
+    "created_by_id": 123456,
+    "revision": 1,
+    "starred": false,
+    "completed": false,
+    "is_recurrence_child": false,
+    "title": "Hello Microservices",
+    "updated_at": "2015-07-16T17:44:51.735Z",
+    "created_by_request_id": "...",
+    "id": 123456,
+    "list_id": 123456,
+    "created_at": "2015-07-16T17:44:51.735Z"
+  },
+  "operation": "create",
+  "subject": {
+    "id": 123456,
+    "type": "task",
+    "revision": 1,
+    "previous_revision": 0,
+    "parents": [{
+      "id": 123456,
+      "type": "list"
+    }]
+  }
+}
+```
 
 ---
 
 # [fit] Shared service for writes for emitting mutations (coordinator)
+
+---
+
+![fit](architecture-diagram.png)
 
 ---
 
@@ -530,7 +577,7 @@ end
 
 # Takeaway
 
-Over half of our microservices have been updated or rewritten since we launched, all without major interruption or even a launch party.
+More than half of our microservices have been updated or rewritten since we launched, all without major interruption or even a launch party.
 
 ---
 
