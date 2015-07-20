@@ -523,6 +523,16 @@ end
 
 ---
 
+# [fit] The HTTP Monad
+
+---
+
+![](burrito.gif)
+
+^ The HTTP Monad is explainable as a burrito.
+
+---
+
 # [fit] Shared `api-controller` for permissions, `null` removal
 
 ---
