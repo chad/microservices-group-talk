@@ -205,14 +205,14 @@ dockersha
 
 $ wake deploy --sha dockersha -n 6
 + creates hosts if necessary
-+ launches 6 instances
++ deploys 6 instances
 
 $ wake count
 6
 
 $ wake expand -n 3
 + creates hosts if necessary
-+ launches 3 instances
++ deploys 3 instances
 9
 
 $ wake contract -n 3
@@ -229,7 +229,7 @@ $ wake contract -n 3
 ```sh
 $ wake replace --sha dockersha
 + counts current instances
-+ launches current amount
++ deploys current amount
 + contracts
 
 $ wake count
