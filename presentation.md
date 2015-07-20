@@ -496,15 +496,35 @@ end
 
 ---
 
-# Conventions
+# Conventions that help us
 
-* Version in url (`/api/v1/tasks`)
-* Flat routes (no regexps, no nesting, use query params)
-* Shared `api-client` for HMAC, discovery
-* Shared `api-controller` for permissions, `null` removal
-* Every change creates a mutation object
-* Shared service for writes for emitting mutations (coordinator)
-* Every object has a `type`, `id`, and `revision` property
+---
+
+# [fit] Version in url (`/api/v1/tasks`)
+
+---
+
+# [fit] Flat routes (no regexps, no nesting, use query params)
+
+---
+
+# [fit] Shared `api-client` for HMAC, discovery
+
+---
+
+# [fit] Shared `api-controller` for permissions, `null` removal
+
+---
+
+# [fit] Every change creates a mutation object
+
+---
+
+# [fit] Shared service for writes for emitting mutations (coordinator)
+
+---
+
+# [fit] Every object has a `type`, `id`, and `revision` property
 
 ---
 
