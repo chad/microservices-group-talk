@@ -1,4 +1,8 @@
-# [fit] Microservices at Wunderlist
+# [fit] The Wunderlist (backend) Architecture 
+
+---
+
+# [fit] A Very Brief History
 
 ---
 
@@ -42,11 +46,226 @@
 
 ---
 
+* Multi-layered
+* Many small databases (not enough)
+* Tiny services
+* Heterogeneous by default
+* Disposable code
+* Immutable Infrastructure
+* Convention over Configuration
+* Asynchronous/Synchronous
+
+---
+
+
 ![fit](architecture-diagram.png)
+
+^ Multi-layered
 
 ---
 
 ![fit](architecture-diagram-with-overlay.png)
+
+^ Multi-layered
+
+---
+
+# [fit] BREAK BIG PROBLEMS INTO MANY tiny problems
+
+---
+
+# [fit] Many small databases
+
+^ What about RI? What about joins? OMG!!
+
+---
+
+# [fit] Tiny Services
+
+^ Here come two examples
+
+---
+
+# [fit] "aufgaben"
+
+---
+
+```ruby
+Aufgaben::Application.routes.draw do
+  get '/api/health' => ->(env){
+    [200, {"Content-Type" => "application/json"}, ['{"up":true}']]
+  }
+
+  namespace :api do
+    namespace :v1 do
+      resources :tasks
+    end
+  end
+end
+```
+
+---
+
+```ruby
+class Api::V1::TasksController < ApplicationController
+  before_filter :reject_conflicts, only: [:update, :destroy]
+
+  def create
+    attributes = Coor.create! attributes: create_params, client: current_client_info
+    stats.increment :task, :create
+    respond_with_created TaskRepresentation.new(task: attributes).to_hash
+  end
+
+  # ...
+end
+```
+
+---
+
+`Task` recently moved from `aufgaben` to `coor`.
+
+```ruby
+class Task < ActiveRecord::Base
+  attr_accessor :completed
+
+  validates :list_id, presence: true
+  validates :direct_owner_id, presence: true
+  validates :title, presence: true, length: 1..255
+  validates :created_by_request_id, uniqueness: true, allow_nil: true
+  validate :do_not_allow_due_dates_very_far_in_the_future
+
+  # ...
+end
+```
+
+---
+
+# [fit] "tasks"
+
+---
+
+```
+GET     /api/v1/tasks                controllers.Tasks.index
+GET     /api/v1/tasks/:id            controllers.Tasks.show(id: Long)
+POST    /api/v1/tasks                controllers.Tasks.create
+PATCH   /api/v1/tasks/:id            controllers.Tasks.update(id: Long)
+PUT     /api/v1/tasks/:id            controllers.Tasks.update(id: Long)
+DELETE  /api/v1/tasks/:id            controllers.Tasks.delete(id: Long, revision: Long)
+```
+
+---
+
+```scala
+trait TasksController extends Controller {
+  def index = Authenticated.async { implicit req =>
+    for {
+      tasks <- fetchTasks
+    } yield Ok(serializeTasks(tasks))
+  }
+
+  def show(id: Long) = Authenticated.async  { implicit req =>
+    for {
+      task <- fetchTask(id)
+    } yield Ok(Json.toJson(task.write))
+  }
+
+  implicit val taskCreateReads = Json.reads[IncomingTaskCreateParams]
+
+  def create = Authenticated.async(parse.json)  { implicit req =>
+    for {
+      params        <- parseBody(taskCreateReads.reads)
+      _             <- hasPermissions(Some(params.listId), req.userId, false)
+      outgoingParams = Some(outgoingCreateParams(params))
+      task          <- Api("aufgaben", "v1").post("/tasks", outgoingParams).as[Task]
+    } yield Created(taskWrites.writes(task.write))
+  }
+
+  // ...
+}
+```
+
+---
+
+# [fit] Heterogeneous By Default
+
+---
+
+# [fit] Why?
+
+^ Use the best tool for the job
+  Prepare for upgrades and technology shift. Historically hard. Do hard things all the time.
+  Reduce silly dogma.
+  Fun and employee passion/motivation.
+
+---
+
+# [fit] Challenges?
+
+^ Takes some getting used to to context-shift.
+  Tooling and deployment more of a pain than the languages themselves.
+  Need people who are willing to learn fast.
+
+---
+
+# [fit] "What about shared libraries?"
+
+---
+
+# [fit] No
+
+---
+
+# Service vs Library
+
+**Logging**
+
+stdout | go logger | syslog | rsyslog cluster
+
+---
+
+# Service vs Library
+
+**Metrics**
+
+statsd | librato
+
+---
+
+**Serialization**
+
+Migrating from a ruby gem to a ruby service for mutations
+
+```ruby
+class TaskRepresentation
+  include Rep
+
+  initialize_with :task
+
+  fields [
+    :id,
+    :assignee_id,
+    :completed,
+    :completed_at,
+    :completed_by_id,
+    :created_at,
+    :created_by_id,
+    :created_by_request_id,
+    :recurrence_type,
+    # ...
+  ] => :default
+end
+```
+
+---
+
+# Doesn't this cause performance problems?
+
+
+---
+
+# [fit] Disposable Code
+
+^ Cellular regeneration analagy.  Code isn't the asset--system is the asset.  Let go of unhealthy attachment to implementation.
 
 ---
 
@@ -152,48 +371,6 @@ Response
 
 ---
 
-# Object Oriented Server Architecture
-
-```ruby
-class TaskFetch
-  def get(id:)                              # GET /api/v1/tasks/123
-  end
-
-  def all(list_id:)                         # GET /api/v1/tasks
-  end
-end
-
-class TaskWrite
-  def create(attributes:)                   # POST /api/v1/tasks
-  end
-
-  def update(id:, attributes:)              # PUT /api/v1/tasks/123
-  end
-
-  def delete(id:)                           # DELETE /api/v1/tasks/123
-  end
-
-  private def valid?(attributes:)
-  end
-end
-```
-
----
-
-# Object Oriented Server Architecture
-
-```ruby
-class Tasks
-  def get(id)
-    Api(:aufgaben, :v1).get("tasks/#{id}").as(Task) do |task|
-      Api(:exestenz, :v1).get("exists", list_id: task.list_id, user_id: user_id).success?
-    end
-  end
-end
-```
-
----
-
 # Deployment: wake
 
 ```sh
@@ -255,104 +432,6 @@ $ wake scale -n 12
 ![fit](awake-screenshot.png)
 
 ---
-
-# [fit] Example core service: aufgaben
-
----
-
-```ruby
-Aufgaben::Application.routes.draw do
-  get '/api/health' => ->(env){
-    [200, {"Content-Type" => "application/json"}, ['{"up":true}']]
-  }
-
-  namespace :api do
-    namespace :v1 do
-      resources :tasks
-    end
-  end
-end
-```
-
----
-
-```ruby
-class Api::V1::TasksController < ApplicationController
-  before_filter :reject_conflicts, only: [:update, :destroy]
-
-  def create
-    attributes = Coor.create! attributes: create_params, client: current_client_info
-    stats.increment :task, :create
-    respond_with_created TaskRepresentation.new(task: attributes).to_hash
-  end
-
-  # ...
-end
-```
-
----
-
-`Task` recently moved from `aufgaben` to `coor`.
-
-```ruby
-class Task < ActiveRecord::Base
-  attr_accessor :completed
-
-  validates :list_id, presence: true
-  validates :direct_owner_id, presence: true
-  validates :title, presence: true, length: 1..255
-  validates :created_by_request_id, uniqueness: true, allow_nil: true
-  validate :do_not_allow_due_dates_very_far_in_the_future
-
-  # ...
-end
-```
-
----
-
-# [fit] Example core service: tasks
-
----
-
-```
-GET     /api/v1/tasks                controllers.Tasks.index
-GET     /api/v1/tasks/:id            controllers.Tasks.show(id: Long)
-POST    /api/v1/tasks                controllers.Tasks.create
-PATCH   /api/v1/tasks/:id            controllers.Tasks.update(id: Long)
-PUT     /api/v1/tasks/:id            controllers.Tasks.update(id: Long)
-DELETE  /api/v1/tasks/:id            controllers.Tasks.delete(id: Long, revision: Long)
-```
-
----
-
-```scala
-trait TasksController extends Controller {
-  def index = Authenticated.async { implicit req =>
-    for {
-      tasks <- fetchTasks
-    } yield Ok(serializeTasks(tasks))
-  }
-
-  def show(id: Long) = Authenticated.async  { implicit req =>
-    for {
-      task <- fetchTask(id)
-    } yield Ok(Json.toJson(task.write))
-  }
-
-  implicit val taskCreateReads = Json.reads[IncomingTaskCreateParams]
-
-  def create = Authenticated.async(parse.json)  { implicit req =>
-    for {
-      params        <- parseBody(taskCreateReads.reads)
-      _             <- hasPermissions(Some(params.listId), req.userId, false)
-      outgoingParams = Some(outgoingCreateParams(params))
-      task          <- Api("aufgaben", "v1").post("/tasks", outgoingParams).as[Task]
-    } yield Created(taskWrites.writes(task.write))
-  }
-
-  // ...
-}
-```
 
 ---
 
@@ -420,81 +499,6 @@ class MutationProcessor extends Actor {
 
 ---
 
-# [fit] Polyglot Development
-
----
-
-# [fit] Why?
-
-^ Use the best tool for the job
-  Prepare for upgrades and technology shift. Historically hard. Do hard things all the time.
-  Reduce silly dogma.
-  Fun and employee passion/motivation.
-
----
-
-# [fit] Challenges?
-
-^ Takes some getting used to to context-shift.
-  Tooling and deployment more of a pain than the languages themselves.
-  Need people who are willing to learn fast.
-
----
-
-# [fit] "What about shared libraries?"
-
----
-
-# [fit] No
-
----
-
-# Service vs Library
-
-**Logging**
-
-stdout | go logger | syslog | rsyslog cluster
-
----
-
-# Service vs Library
-
-**Metrics**
-
-statsd | librato
-
----
-
-**Serialization**
-
-Migrating from a ruby gem to a ruby service for mutations
-
-```ruby
-class TaskRepresentation
-  include Rep
-
-  initialize_with :task
-
-  fields [
-    :id,
-    :assignee_id,
-    :completed,
-    :completed_at,
-    :completed_by_id,
-    :created_at,
-    :created_by_id,
-    :created_by_request_id,
-    :recurrence_type,
-    # ...
-  ] => :default
-end
-```
-
----
-
-# Doesn't this cause performance problems?
-
----
 
 
 ![100%](Librato.png)
