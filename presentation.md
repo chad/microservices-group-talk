@@ -40,20 +40,26 @@
 
 ![fit](architecture-diagram.png)
 
+^ currently > 600 total machine instances running in these services
+
 ---
 
 ![fit](giphy.gif)
 
+
 ---
 
 * Multi-layered
-* Many small databases (not enough)
+* Many small databases
 * Tiny services
 * Heterogeneous by default
 * Disposable code
 * Immutable Infrastructure
 * Convention over Configuration
 * Asynchronous/Synchronous
+
+^ interesting aspects we'll cover
+
 
 ---
 
@@ -70,13 +76,15 @@
 
 ---
 
-# [fit] BREAK BIG PROBLEMS INTO MANY tiny problems
+# [fit] Break big problems into many tiny problems
 
 ---
 
 # [fit] Many small databases
 
+^ 34 relational databases, plus a few redis and dynamodb
 ^ What about RI? What about joins? OMG!!
+
 
 ---
 
@@ -260,114 +268,36 @@ end
 
 # Doesn't this cause performance problems?
 
+---
+
+![100%](Librato.png)
+
+^ Talk about how much easier it is to identify, scale, etc. with separate processes
+ And other stuff.  (Yes, but IPC isn't what slows us down)
+
 
 ---
 
 # [fit] Disposable Code
 
-^ Cellular regeneration analagy.  Code isn't the asset--system is the asset.  Let go of unhealthy attachment to implementation.
+^ Cellular regeneration analogy.  Code isn't the asset--system is the asset.  Let go of unhealthy attachment to implementation.
 
 ---
 
-# Synchronous & Asynchronous
+# Really...
 
-Request
+More than half of our services have been updated or rewritten since we launched
 
-```json
-{
-  "type": "request",
-  "verb": "POST",
-  "uri": "/api/v1/tasks",
-  "headers": {
-    ...
-  },
-  "body":
-    "{\"title\":\"HI\",
-      \"list_id\":105529866,
-      \"starred\":false,
-      \"recurrence_count\":0,
-      \"recurrence_type\":\"\",
-      \"completed\":false,
-      \"created_at\":\"2014-06-26T12:30:27Z\",
-      \"selected\":false,
-      \"active\":false}"
-}
-```
-
-^ Every request is synchronous from the HTTP LB down to the database
-  Yet every request is async because of hahn and the websocket
+^ No disruption. No Big Rewrite
 
 ---
 
-# Synchronous & Asynchronous
 
-Response
+# [fit] Immutable Infrastructure
 
-```json
-{
-  "status": 200,
-  "headers": {
-    ...
-  },
-  "body":
-    "{\"title\":\"HI\",
-      \"list_id\":105529866,
-      \"starred\":false,
-      \"recurrence_count\":0,
-      \"recurrence_type\":\"\",
-      \"completed\":false,
-      \"created_at\":\"2014-06-26T12:30:27Z\",
-      \"selected\":false,
-      \"active\":false}"
-}
-```
+^ Never upgrade software on an existing server. Kill and replace it.
+  Like a cell in a biological system
 
-^ Every request is synchronous from the HTTP LB down to the database
-  Yet every request is async because of hahn and the websocket
-
-
----
-
-# Every change generates a mutation
-
-```json
-{
-  "recipient_id": 123456,
-  "version": 1,
-  "data": {
-    "created_by_id": 123456,
-    "revision": 1,
-    "starred": false,
-    "completed": false,
-    "is_recurrence_child": false,
-    "title": "Hello Microservices",
-    "updated_at": "2015-07-16T17:44:51.735Z",
-    "created_by_request_id": "...",
-    "id": 123456,
-    "list_id": 123456,
-    "created_at": "2015-07-16T17:44:51.735Z"
-  },
-  "operation": "create",
-  "subject": {
-    "id": 123456,
-    "type": "task",
-    "revision": 1,
-    "previous_revision": 0,
-    "parents": [{
-      "id": 123456,
-      "type": "list"
-    }]
-  },
-  "client": {
-    "id": "abc...",
-    "request_id": "...",
-    "device_id": "...",
-    "instance_id": "...",
-    "user_id": "123456"
-  },
-  "type": "mutation"
-}
-```
 
 ---
 
@@ -431,84 +361,10 @@ $ wake scale -n 12
 
 ![fit](awake-screenshot.png)
 
----
 
 ---
 
-# [fit] Example stream service: webhooks
-
----
-
-```ruby
-Rails.application.routes.draw do
-  namespace :api do
-    namespace :v1 do
-      resources :webhooks
-    end
-  end
-end
-```
-
----
-
-Old version:
-
-```ruby
-def subscribe_and_work
-  queue.bind(exchange, routing_key: "#").subscribe(ack: true, block: true) do |info, properties, payload|
-    begin
-      if work(payload, info.routing_key.split('.')[1]) == :retry
-        queue.class.channel.reject info.delivery_tag, true # the last true is important, it means to re-enqueue
-      else
-        queue.class.channel.ack info.delivery_tag
-      end
-    rescue StandardError => e
-      p e
-    end
-  end
-end
-```
-
----
-
-```scala
-class MutationProcessor extends Actor {
-  import MutationProcessor._
-
-  implicit val timeout = akka.util.Timeout(2, TimeUnit.SECONDS)
-  import context.dispatcher
-  import akka.pattern.pipe
-
-  def receive = {
-    case HandleListDeletion(mutation, webhook) =>
-      println(s"[MutationHandler!HandeListDeletion] Received a delete-list mutation. Deleting webhook #${webhook.id}.")
-      val deleteOperation = ApiCalls.deleteWebhook(webhook)
-      pipe(deleteOperation.map(_ => Done).toFutureEither) to sender
-
-    case ProcessMutation(listId, mutation, webhook) =>
-      println(s"[MutationHandler!ProcessMutation] processing mutation for list_id $listId")
-      val future: ApiFuture[Option[JsValue]] = processWebhook(mutation, webhook)
-      pipe(future.toFutureEither) to sender
-  }
-
-  def processWebhook(mutation: Mutation, webhook: Webhook): ApiFuture[Option[JsValue]] = {
-    new Processor(mutation).process(webhook)
-  }
-}
-```
-
----
-
-
-
-![100%](Librato.png)
-
-^ Talk about how much easier it is to identify, scale, etc. with separate processes
- And other stuff.  (Yes, but IPC isn't what slows us down)
-
----
-
-# Conventions that help us
+# Convention Over Configuration
 
 ---
 
@@ -524,16 +380,6 @@ class MutationProcessor extends Actor {
 ---
 
 # [fit] Shared `api-client` for HMAC, discovery
-
----
-
-# [fit] The HTTP Monad
-
----
-
-![](burrito.gif)
-
-^ The HTTP Monad is explainable as a burrito.
 
 ---
 
@@ -575,24 +421,83 @@ class MutationProcessor extends Actor {
 }
 ```
 
----
-
-# [fit] Shared service for writes for emitting mutations (coordinator)
-
----
-
-![fit](architecture-diagram.png)
-
----
-
 # [fit] Every object has a `type`, `id`, and `revision` property
 
 ---
 
-# Takeaway
+# Synchronous & Asynchronous
 
-More than half of our microservices have been updated or rewritten since we launched, all without major interruption or even a launch party.
+Request
+
+```json
+{
+  "type": "request",
+  "verb": "POST",
+  "uri": "/api/v1/tasks",
+  "headers": {
+    ...
+  },
+  "body":
+    "{\"title\":\"HI\",
+      \"list_id\":105529866,
+      \"starred\":false,
+      \"recurrence_count\":0,
+      \"recurrence_type\":\"\",
+      \"completed\":false,
+      \"created_at\":\"2014-06-26T12:30:27Z\",
+      \"selected\":false,
+      \"active\":false}"
+}
+```
+
+^ Every request is synchronous from the HTTP LB down to the database
+  Yet every request is async because of hahn and the websocket
 
 ---
 
-# [fit] Questions?
+# Synchronous & Asynchronous
+
+Response
+
+```json
+{
+  "status": 200,
+  "headers": {
+    ...
+  },
+  "body":
+    "{\"title\":\"HI\",
+      \"list_id\":105529866,
+      \"starred\":false,
+      \"recurrence_count\":0,
+      \"recurrence_type\":\"\",
+      \"completed\":false,
+      \"created_at\":\"2014-06-26T12:30:27Z\",
+      \"selected\":false,
+      \"active\":false}"
+}
+```
+
+^ Every request is synchronous from the HTTP LB down to the database
+  Yet every request is async because of hahn and the websocket
+
+
+
+---
+
+* Multi-layered
+* Many small databases
+* Tiny services
+* Heterogeneous by default
+* Disposable code
+* Immutable Infrastructure
+* Convention over Configuration
+* Asynchronous/Synchronous
+
+---
+
+# Questions?
+
+*credits:* @myobie + @duncan for some slides and content
+
+*slides:* https://github.com/chad/microservices-group-talk/tree/wunderlist-backend-architecture-at-microsoft-talk
